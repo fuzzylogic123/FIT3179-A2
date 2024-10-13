@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #fff9f0;
+    }
+    h1 {
+      font-family: 'Oswald', sans-serif;
+      color: #e25822;
+      text-align: center;
+      font-size: 2.5em;
+    }
+    .vis-container {
+      margin-bottom: 40px;
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .callout {
+      background-color: #f0f0f0;
+      border-left: 5px solid #e25822;
+      padding: 15px;
+      margin-bottom: 20px;
+      font-style: italic;
+    }
+    .explanation {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Australian Bushfires August 2019</h1>
+  
+  <div class="explanation">
+    <p>This visualization presents data on the Australian bushfires that occurred in August 2019. The devastating fires affected large areas of the country, causing significant environmental and economic damage.</p>
+  </div>
+
+  <div class="callout">
+    <strong>Key Insight:</strong> The visualizations below show the geographic distribution and intensity of fires across Australia, as well as their occurrence patterns throughout the day.
+  </div>
+
+  <div id="vis-container"></div>
+
+  <div class="explanation">
+    <h2>Map of Australian Bushfires</h2>
+    <p>The first visualization is a map of Australia showing the location and intensity of bushfires. Each circle represents a fire, with the size and color indicating its brightness and intensity.</p>
+    <ul>
+      <li>Larger circles indicate fires with higher brightness levels.</li>
+      <li>The color scale ranges from yellow (less intense) to red (more intense).</li>
+      <li>You can hover over each fire point to see detailed information, including latitude, longitude, brightness, date, and time.</li>
+    </ul>
+  </div>
+
+  <div class="callout">
+    <strong>Notable Observation:</strong> Fire clusters are visible in certain regions, potentially indicating areas of severe bushfire activity.
+  </div>
+
+  <div class="explanation">
+    <h2>Fire Occurrences by Time of Day</h2>
+    <p>The second visualization is a heatmap showing fire occurrences by date and time of day. This helps identify patterns in fire activity over time.</p>
+    <ul>
+      <li>The x-axis represents the date in August 2019.</li>
+      <li>The y-axis shows the time of day in 24-hour format.</li>
+      <li>Darker colors indicate a higher number of fires at that specific time and date.</li>
+    </ul>
+  </div>
+
+  <div class="callout">
+    <strong>Important Pattern:</strong> Look for any time-of-day trends in fire occurrences, such as whether fires are more common during certain hours.
+  </div>
+
+  <script>
+  const specs = [
+    {
+      "title": "Australian Bushfires: August 2019",
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "description": "Map of Australian bushfires",
+      "width": 800,
+      "height": 600,
+      "projection": {
+        "type": "mercator",
+        "center": [133.7751, -25.2744],
+        "scale": 1000
+      },
+      "layer": [
+        {
+          "data": {
+            "url": "https://raw.githubusercontent.com/vega/vega-datasets/master/data/world-110m.json",
+            "format": {
+              "type": "topojson",
+              "feature": "countries"
+            }
+          },
+          "mark": {
+            "type": "geoshape",
+            "fill": "lightgray",
+            "stroke": "white"
+          },
+          "transform": [
+            {
+              "filter": "datum.id == 36"
+            }
+          ]
+        },
+        {
+          "data": {
+            "url": "data/fire_archive_M6_96619.csv"
+          },
+          "mark": "circle",
+          "encoding": {
+            "longitude": {
+              "field": "longitude",
+              "type": "quantitative"
+            },
+            "latitude": {
+              "field": "latitude",
+              "type": "quantitative"
+            },
+            "size": {
+              "field": "brightness",
+              "type": "quantitative",
+              "scale": {
+                "type": "sqrt",
+                "domain": [300, 400],
+                "range": [10, 1000]
+              },
+              "legend": {
+                "title": "Fire Brightness"
+              }
+            },
+            "color": {
+              "field": "brightness",
+              "type": "quantitative",
+              "scale": {
+                "type": "linear",
+                "domain": [300, 350, 400],
+                "range": ["yellow", "orange", "red"]
+              },
+              "legend": {
+                "title": "Fire Intensity"
+              }
+            },
+            "tooltip": [
+              {"field": "latitude", "type": "quantitative", "format": ".2f"},
+              {"field": "longitude", "type": "quantitative", "format": ".2f"},
+              {"field": "brightness", "type": "quantitative", "format": ".1f"},
+              {"field": "acq_date", "type": "temporal", "title": "Date"},
+              {"field": "acq_time", "type": "ordinal", "title": "Time"}
+            ]
+          }
+        }
+      ]
+    },
+    {
+    "title": "Fire Occurrences by Time of Day",
+    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+    "description": "A heatmap showing fire occurrences by time of day and date",
+    "data": {"url": "data/fire_archive_M6_96619.csv"},
+    "transform": [
+      {"calculate": "hours(datum.acq_time * 60000)", "as": "hour"},
+      {"calculate": "datum.hour + ':00'", "as": "time_formatted"}
+    ],
+    "mark": "rect",
+    "encoding": {
+      "x": {"field": "acq_date", "type": "ordinal", "timeUnit": "date", "title": "Date"},
+      "y": {
+        "field": "hour",
+        "type": "ordinal",
+        "sort": "ascending",
+        "axis": {
+          "title": "Time of Day",
+          "labelExpr": "datum.value + ':00'",
+          "tickCount": 24,
+          "labelAngle": 0
+        }
+      },
+      "color": {
+        "aggregate": "count",
+        "title": "Number of Fires",
+        "scale": {
+          "scheme": "yelloworangered"
+        }
+      }
+    },
+    "width": 800,
+    "height": 600,
+    "config": {
+      "axis": {
+        "labelFontSize": 10
+      },
+      "view": {"stroke": null}
+    }
+  },
+  {
+      "title": "Fire Occurrences by Time of Day",
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "description": "A bar chart showing fire occurrences by time of day",
+      "data": {"url": "data/fire_archive_M6_96619.csv"},
+      "transform": [
+        {"calculate": "hours(datum.acq_time * 60000)", "as": "hour"}
+      ],
+      "mark": "bar",
+      "encoding": {
+        "x": {
+          "field": "hour",
+          "type": "ordinal",
+          "axis": {
+            "title": "Hour of Day",
+            "labelExpr": "datum.value + ':00'",
+            "tickCount": 24
+          }
+        },
+        "y": {
+          "aggregate": "count",
+          "title": "Number of Fires"
+        },
+        "color": {
+          "value": "#e25822"
+        }
+      },
+      "width": 800,
+      "height": 400
+    },
+  ]    
+      specs.forEach((spec, index) => {
+        const div = document.createElement('div');
+        div.className = 'vis-container';
+        div.id = `vis-${index}`;
+        document.getElementById('vis-container').appendChild(div);
+        vegaEmbed(`#vis-${index}`, spec);
+      });
+  </script>
+</body>
+</html>
